@@ -14,6 +14,7 @@
 		3614C26F2C7B624C003BA3C6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3614C26E2C7B624C003BA3C6 /* Assets.xcassets */; };
 		3614C2722C7B624C003BA3C6 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = 3614C2712C7B624C003BA3C6 /* Base */; };
 		3614C27C2C7B64AA003BA3C6 /* EntityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3614C27B2C7B64AA003BA3C6 /* EntityManager.swift */; };
+		3614C27F2C7B83B8003BA3C6 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 3614C27E2C7B83B8003BA3C6 /* .gitignore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		3614C2712C7B624C003BA3C6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		3614C2732C7B624C003BA3C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		3614C27B2C7B64AA003BA3C6 /* EntityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntityManager.swift; sourceTree = "<group>"; };
+		3614C27E2C7B83B8003BA3C6 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,6 +44,7 @@
 		3614C2562C7B624B003BA3C6 = {
 			isa = PBXGroup;
 			children = (
+				3614C27E2C7B83B8003BA3C6 /* .gitignore */,
 				3614C2612C7B624B003BA3C6 /* viper_todo */,
 				3614C2602C7B624B003BA3C6 /* Products */,
 			);
@@ -153,6 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3614C26F2C7B624C003BA3C6 /* Assets.xcassets in Resources */,
+				3614C27F2C7B83B8003BA3C6 /* .gitignore in Resources */,
 				3614C2722C7B624C003BA3C6 /* Base in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
