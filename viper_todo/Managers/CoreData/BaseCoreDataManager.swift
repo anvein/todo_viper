@@ -1,8 +1,7 @@
 import UIKit
 import CoreData
 
-/// Entity manager for Core Data entities (кто-то называет его CoreData Manager)
-class EntityManager {
+class BaseCoreDataManager {
     private var managedObjectContext: NSManagedObjectContext? = nil
 
     func getContext() -> NSManagedObjectContext {
@@ -25,8 +24,10 @@ class EntityManager {
             do {
                 try context.save()
             } catch let error as NSError {
+                // TODO: обработать ошибку нормально
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
     }
+
 }

@@ -5,13 +5,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-    lazy var em = EntityManager()
+    lazy var em = BaseCoreDataManager()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
 
-        let mainViewController = ViewController()
+        // TODO: вынести в Factory
+
+        let tasksListPresenter = TasksListPresenter()
+        let mainViewController = TasksListViewController(presenter: tasksListPresenter)
+        tasksListPresenter.view = mainViewController
+
         let navigationController = UINavigationController(rootViewController: mainViewController)
 
         window.rootViewController = navigationController
