@@ -111,6 +111,7 @@ private extension TaskDetailPresenter {
     func buildTaskDetailDtoFrom(taskModel: TaskModel) -> TaskDetailDto {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "d MMM yyyy, HH:mm"
+        dateFormatter.locale = Locale(identifier: "ru_RU")
 
         var dateAsString: String? = nil
         if let createdAt = taskModel.createdAt {
