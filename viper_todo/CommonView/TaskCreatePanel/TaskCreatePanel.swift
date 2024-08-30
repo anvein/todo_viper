@@ -6,7 +6,7 @@ final class TaskCreatePanel: UIView {
 
     // MARK: - Services
 
-    weak var delegate: CreateTaskPanelDelegate?
+    weak var delegate: TaskCreatePanelDelegate?
 
     // MARK: - Settings
 
@@ -21,7 +21,7 @@ final class TaskCreatePanel: UIView {
         didSet {
             if oldValue != currentState {
                 updateAppearaceFor(state: currentState)
-                delegate?.createTaskPanelDidChangedState(newState: currentState)
+                delegate?.taskCreatePanelDidChangedState(newState: currentState)
             }
         }
     }
@@ -132,7 +132,7 @@ private extension TaskCreatePanel {
 
     @objc func didTapReadyButton() {
         if let text = textField.text, text.count != 0 {
-            delegate?.createTaskPanelDidTapCreateButton(title: text)
+            delegate?.taskCreatePanelDidTapCreateButton(title: text)
             textField.text = nil
         }
 
@@ -218,6 +218,13 @@ extension TaskCreatePanel {
             switch self {
             case .base: return 8
             case .editable: return 0
+            }
+        }
+
+        var panelHeight: Float {
+            switch self {
+            case .base: return 60
+            case .editable: return 68
             }
         }
 

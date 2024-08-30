@@ -52,6 +52,7 @@ private extension TaskCreatePanel.TextField {
         let imageInsets: UIEdgeInsets = .init(top: 0, left: 8, bottom: 0, right: 16)
         setImageViewToLeftView(imageView: leftImageView, insets: imageInsets)
         leftViewMode = .always
+        leftView?.isUserInteractionEnabled = false
     }
 
 }

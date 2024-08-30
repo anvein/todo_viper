@@ -2,14 +2,14 @@
 import Foundation
 
 class TaskModel {
-    var id: String?
+    var id: UUID?
     var title: String
     var description: String?
     var isCompleted: Bool
     var createdAt: Date?
 
     init(
-        id: String? = nil,
+        id: UUID? = nil,
         title: String,
         description: String? = nil,
         isCompleted: Bool,
@@ -20,5 +20,13 @@ class TaskModel {
         self.description = description
         self.isCompleted = isCompleted
         self.createdAt = createdAt
+    }
+
+    init(cdTask: CDTask) {
+        self.id = cdTask.id
+        self.title = cdTask.title ?? "No title"
+        self.description = cdTask.descriptionText
+        self.isCompleted = cdTask.isCompleted
+        self.createdAt = cdTask.createdAt
     }
 }

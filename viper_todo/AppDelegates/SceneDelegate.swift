@@ -11,13 +11,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
 
-        // TODO: вынести в Factory
-
-        let tasksListPresenter = TasksListPresenter()
-        let mainViewController = TasksListViewController(presenter: tasksListPresenter)
-        tasksListPresenter.view = mainViewController
-
-        let navigationController = UINavigationController(rootViewController: mainViewController)
+        let taskListVC = TaskListModuleAssemler().assembly()
+        let navigationController = UINavigationController(rootViewController: taskListVC)
 
         window.rootViewController = navigationController
 

@@ -5,56 +5,12 @@ import SnapKit
 
 final class TasksListViewController: UIViewController {
 
+    private var presenter: TasksListPresenterType
+    private let taskDetailModuleAssembler: TaskDetailModuleAssembler
+
     // MARK: - Subviews
 
-    private lazy var bgImageView: UIImageView = {
-        $0.image = UIImage(named: "listBackground")
-        $0.contentMode = .scaleAspectFill
-        $0.layer.zPosition = 0
-        return $0
-    }(UIImageView())
-
-    private lazy var tasksTableView: UITableView = {
-        $0.backgroundColor = nil
-        $0.scrollsToTop = true
-        $0.separatorStyle = .none
-        $0.estimatedRowHeight = 60
-        $0.rowHeight = UITableView.automaticDimension
-        $0.showsVerticalScrollIndicator = false
-        $0.contentInset.bottom = 80
-        $0.layer.zPosition = 1
-
-        let headerLabel = UILabel()
-        headerLabel.text = self.title
-        headerLabel.textColor = .white
-        headerLabel.font = .systemFont(ofSize: 32, weight: .bold)
-        headerLabel.sizeToFit()
-        headerLabel.frame = .init(
-            origin: .zero,
-            size: .init(
-                width: headerLabel.frame.width,
-                height: headerLabel.frame.height + 10
-            )
-        )
-        $0.tableHeaderView = headerLabel
-
-        $0.register(TaskTableViewCell.self, forCellReuseIdentifier: TaskTableViewCell.className)
-        $0.dataSource = self
-        $0.delegate = self
-        return $0
-    }(UITableView())
-    
-    private lazy var taskCreatePanel: TaskCreatePanel = {
-        $0.textFieldPlaceholder = "Создать задачу"
-        $0.delegate = self
-        $0.layer.zPosition = 2
-        return $0
-    }(TaskCreatePanel())
-
-    // MARK: - Constraints
-
-    private var panelTopPaddingConstraint: Constraint?
-    private var panelHorizontalPaddingsConstraint: Constraint?
+    private lazy var mainView: TaskListMainView = .init()
 
     // MARK: - State
 
@@ -62,18 +18,18 @@ final class TasksListViewController: UIViewController {
         willSet {
             guard isShowNavigationTitle != newValue else { return }
             setNavigationTitleVisible(newValue)
-            setTableHeaderVisible(!newValue)
+            mainView.setTableHeaderVisible(!newValue)
         }
     }
 
-    // MARK: - Presenter
-
-    private var presenter: TasksListPresenterType
-
     // MARK: - Init
 
-    init(presenter: TasksListPresenterType) {
+    init(
+        presenter: TasksListPresenterType,
+        taskDetailAssembler: TaskDetailModuleAssembler
+    ) {
         self.presenter = presenter
+        self.taskDetailModuleAssembler = taskDetailAssembler
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -83,14 +39,32 @@ final class TasksListViewController: UIViewController {
     
     // MARK: - Lifecycle
     
+    override func loadView() {
+        view = mainView
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-
         self.title = "📅 Задачи"
+
         presenter.viewDidLoad()
-        setupSubviews()
+        mainView.setupLayout()
+        setupDelegates()
+        setupNavigationBar()
+    }
 
+}
 
+extension TasksListViewController {
+    // MARK: - Setup
+
+    func setupDelegates() {
+        mainView.tasksTableDataSource = self
+        mainView.tasksTableDelegate = self
+        mainView.taskCreatePanelDelegate = self
+    }
+
+    func setupNavigationBar() {
         if let navigationBar = navigationController?.navigationBar {
             navigationBar.tintColor = .white
             navigationBar.titleTextAttributes = [
@@ -101,34 +75,6 @@ final class TasksListViewController: UIViewController {
             navigationBar.shadowImage = UIImage()
             navigationBar.isTranslucent = true
             navigationBar.backgroundColor = .clear
-        }
-    }
-}
-
-extension TasksListViewController {
-    // MARK: - Setup
-
-    func setupSubviews() {
-        view.backgroundColor = .tasksListBackground
-
-        view.addSubviews(tasksTableView, bgImageView, taskCreatePanel)
-
-        bgImageView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-        }
-
-        tasksTableView.snp.makeConstraints {
-            $0.top.equalTo(view.safeAreaLayoutGuide)
-            $0.horizontalEdges.equalToSuperview().inset(8)
-        }
-
-        let panelSidesPadding = taskCreatePanel.currentState.panelSidesPadding
-        taskCreatePanel.snp.makeConstraints {
-            $0.height.equalTo(60)
-            $0.bottom.equalTo(view.keyboardLayoutGuide.snp.top)
-            $0.centerX.equalToSuperview()
-            panelTopPaddingConstraint = $0.top.equalTo(tasksTableView.snp.bottom).offset(panelSidesPadding).constraint
-            panelHorizontalPaddingsConstraint = $0.horizontalEdges.equalToSuperview().inset(panelSidesPadding).constraint
         }
     }
 
@@ -146,40 +92,45 @@ extension TasksListViewController {
             navigationBar.titleTextAttributes = [.foregroundColor: titleColor]
         }
     }
-
-    func setTableHeaderVisible(_ visible: Bool) {
-        guard let tableHeader = tasksTableView.tableHeaderView else { return }
-
-        UIView.transition(
-            with: tableHeader,
-            duration: visible ? 0.2 : 0.1,
-            options: [.transitionCrossDissolve]
-        ) { [tableHeader] in
-            tableHeader.alpha = visible ? 1 : 0
-        }
-    }
 }
 
 extension TasksListViewController: TasksListViewType {
-    
+
     func reloadTableData() {
-        tasksTableView.reloadData()
+        mainView.tasksTableView.reloadData()
     }
 
     func reloadTableCellWith(indexPath: IndexPath) {
-        tasksTableView.reloadRows(at: [indexPath], with: .none)
+        mainView.tasksTableView.reloadRows(at: [indexPath], with: .none)
     }
 
     func addTableCellTo(indexPath: IndexPath) {
-        tasksTableView.insertRows(at: [indexPath], with: .fade)
+        mainView.tasksTableView.insertRows(at: [indexPath], with: .fade)
     }
 
     func removeTableCellWith(indexPath: IndexPath) {
-        tasksTableView.deleteRows(at: [indexPath], with: .fade)
+        mainView.tasksTableView.deleteRows(at: [indexPath], with: .fade)
     }
 
-    func moveTableCell(fromIndexPath: IndexPath, toIndexPath: IndexPath) {
-        tasksTableView.moveRow(at: fromIndexPath, to: toIndexPath)
+    func moveTableCell(fromIndexPath: IndexPath, toIndexPath: IndexPath, withAnimate: Bool) {
+        if withAnimate {
+            mainView.tasksTableView.moveRow(at: fromIndexPath, to: toIndexPath)
+        } else {
+            UIView.performWithoutAnimation { [mainView] in
+                mainView.tasksTableView.moveRow(at: fromIndexPath, to: toIndexPath)
+            }
+        }
+    }
+
+    func openTaskDetailWith(taskId: UUID) {
+        guard let navigationController,
+              let parentPresenter = presenter as? TaskDetailModuleOutput else { return }
+        
+        let taskDetailVC = taskDetailModuleAssembler.assembly(
+            taskId: taskId,
+            moduleOutput: parentPresenter
+        )
+        navigationController.pushViewController(taskDetailVC, animated: true)
     }
 
     func showAlertDeleteTaskWith(indexPath: IndexPath, title: String) {
@@ -226,8 +177,7 @@ extension TasksListViewController: UITableViewDataSource {
 extension TasksListViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        // TODO: вызов в presenter + в фабрику
-        
+        presenter.didSelectTaskWith(indexPath: indexPath)
     }
 
     func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
@@ -262,7 +212,7 @@ extension TasksListViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let offset = scrollView.contentOffset.y
 
-        let headerHeight = (tasksTableView.tableHeaderView?.bounds.height ?? 0) / 3
+        let headerHeight = (mainView.tasksTableView.tableHeaderView?.bounds.height ?? 0) / 3
 
         if offset >= headerHeight && !isShowNavigationTitle {
             isShowNavigationTitle = true
@@ -282,21 +232,16 @@ extension TasksListViewController: TaskTableViewCellDelegate {
 
 // MARK: - CreateTaskBottomPanelDelegate
 
-extension TasksListViewController: CreateTaskPanelDelegate {
-    func createTaskPanelDidTapCreateButton(title: String) {
+extension TasksListViewController: TaskCreatePanelDelegate {
+    func taskCreatePanelDidTapCreateButton(title: String) {
         let title = title.trimmingCharacters(in: .whitespaces)
         if !title.isEmpty {
             presenter.createTaskWith(title: title)
         }
     }
     
-    func createTaskPanelDidChangedState(newState: TaskCreatePanel.State) {
-        panelTopPaddingConstraint?.update(offset: newState.panelSidesPadding)
-        panelHorizontalPaddingsConstraint?.update(inset: newState.panelSidesPadding)
-
-        UIView.animate(withDuration: 0.3) { [weak self] in
-            self?.view.layoutIfNeeded()
-        }
+    func taskCreatePanelDidChangedState(newState: TaskCreatePanel.State) {
+        mainView.updatePanelForState(newState)
     }
 
 }

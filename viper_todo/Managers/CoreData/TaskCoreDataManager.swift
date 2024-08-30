@@ -26,7 +26,7 @@ final class TaskCoreDataManager: BaseCoreDataManager {
         }
     }
 
-    func getTaskBy(id: String) -> CDTask? {
+    func getTaskBy(id: UUID) -> CDTask? {
         let fetchRequest: NSFetchRequest<CDTask> = CDTask.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
 
@@ -59,6 +59,16 @@ final class TaskCoreDataManager: BaseCoreDataManager {
 
     func updateField(isCompleted: Bool, task: CDTask) {
         task.isCompleted = isCompleted
+        saveContext()
+    }
+
+    func updateField(title: String, task: CDTask) {
+        task.title = title
+        saveContext()
+    }
+
+    func updateField(descriptionText: String?, task: CDTask) {
+        task.descriptionText = descriptionText
         saveContext()
     }
 
