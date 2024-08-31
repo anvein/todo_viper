@@ -3,28 +3,16 @@ import Foundation
 
 final class TaskDetailPresenter {
 
-    // MARK: - Services
+    // MARK: - MVP components
 
-    private let taskCDManager: TaskCoreDataService
-
-    // MARK: - View / Presenter
-
+    private let model: TaskDetailModel
     private weak var view: TaskDetailViewProtocol?
     private var moduleOutput: TaskDetailModuleOutput?
 
-    // MARK: - State
-
-    private var taskModel: TaskModel?
-    private let taskId: UUID
-
     // MARK: - Init
 
-    init(
-        taskId: UUID,
-        taskCDManager: TaskCoreDataService = .init()
-    ) {
-        self.taskCDManager = taskCDManager
-        self.taskId = taskId
+    init(model: TaskDetailModel) {
+        self.model = model
     }
 
     // MARK: - Injection
@@ -44,62 +32,40 @@ final class TaskDetailPresenter {
 extension TaskDetailPresenter: TaskDetailPresenterProtocol {
 
     func viewDidLoad() {
-        guard let cdTask = taskCDManager.getTaskBy(id: taskId) else { return }
-
-        let taskModel = TaskModel(cdTask: cdTask)
-        self.taskModel = taskModel
-        let taskDetailDto = buildTaskDetailDtoFrom(taskModel: taskModel)
+        let task = model.getTask()
+        let taskDetailDto = buildTaskDetailDtoFrom(task: task)
 
         view?.setTaskData(task: taskDetailDto)
     }
 
     func didTapIsDoneButton() {
-        guard let taskModel,
-              let taskId = taskModel.id,
-              let taskCDModel = taskCDManager.getTaskBy(id: taskId) else { return }
-
-        let newValue = !taskModel.isCompleted
-
-        taskCDManager.updateField(isCompleted: newValue, task: taskCDModel)
-        taskModel.isCompleted = newValue
-
-        view?.setTaskIsCompleted(newValue)
+        let task = model.updateAndSwitchTaskIsCompletedField()
+        view?.setTaskIsCompleted(task.isCompleted)
     }
 
     func didEndEditTaskTitle(_ title: String) {
-        guard let taskModel,
-              let taskId = taskModel.id,
-              let cdTaskModel = taskCDManager.getTaskBy(id: taskId) else { return }
-
         let preparedTitle = title.replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespaces)
 
         guard !preparedTitle.isEmpty else {
-            view?.setTaskTitle(taskModel.title)
+            let task = model.getTask()
+            view?.setTaskTitle(task.title)
             return
         }
 
-        taskCDManager.updateField(title: preparedTitle, task: cdTaskModel)
-        taskModel.title = preparedTitle
-
-        view?.setTaskTitle(preparedTitle)
+        let task = model.updateTaskField(title: preparedTitle)
+        view?.setTaskTitle(task.title)
     }
 
     func didEndEditTaskDescription(_ text: String?) {
-        guard let taskModel,
-              let taskId = taskModel.id,
-              let cdTaskModel = taskCDManager.getTaskBy(id: taskId) else { return }
-
         let preparedText = text?.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        taskCDManager.updateField(descriptionText: preparedText, task: cdTaskModel)
-        taskModel.description = preparedText
-
-        view?.setTaskDescription(preparedText ?? "")
+        let task = model.updateTaskField(description: preparedText)
+        view?.setTaskDescription(task.description ?? "")
     }
 
     func didCloseTaskDetail() {
-        moduleOutput?.taskDetailModuleDidClose(taskId: taskId)
+        moduleOutput?.taskDetailModuleDidClose(taskId: model.taskId)
     }
 
 }
@@ -108,20 +74,20 @@ private extension TaskDetailPresenter {
 
     // MARK: - Helpers
 
-    func buildTaskDetailDtoFrom(taskModel: TaskModel) -> TaskDetailDto {
+    func buildTaskDetailDtoFrom(task: TaskModel) -> TaskDetailDto {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "d MMM yyyy, HH:mm"
         dateFormatter.locale = Locale(identifier: "ru_RU")
 
         var dateAsString: String? = nil
-        if let createdAt = taskModel.createdAt {
+        if let createdAt = task.createdAt {
             dateAsString = dateFormatter.string(from: createdAt)
         }
 
         return TaskDetailDto(
-            title: taskModel.title,
-            isCompleted: taskModel.isCompleted,
-            descriptionText: taskModel.description ?? "",
+            title: task.title,
+            isCompleted: task.isCompleted,
+            descriptionText: task.description ?? "",
             createdAt: dateAsString
         )
     }

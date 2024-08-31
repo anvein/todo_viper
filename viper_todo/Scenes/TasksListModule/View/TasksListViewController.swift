@@ -53,6 +53,11 @@ final class TasksListViewController: UIViewController {
         setupNavigationBar()
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        mainView.endEditing(true)
+    }
+
 }
 
 extension TasksListViewController {
@@ -133,6 +138,14 @@ extension TasksListViewController: TasksListViewType {
                 mainView.tasksTableView.moveRow(at: fromIndexPath, to: toIndexPath)
             }
         }
+    }
+
+    func addTableSectionWith(index: Int) {
+        mainView.tasksTableView.insertSections([index], with: .automatic)
+    }
+
+    func deleteTableSectionWith(index: Int) {
+        mainView.tasksTableView.deleteSections([index], with: .automatic)
     }
 
     func openTaskDetailWith(taskId: UUID) {

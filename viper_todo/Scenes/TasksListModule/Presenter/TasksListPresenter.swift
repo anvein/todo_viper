@@ -5,30 +5,23 @@ final class TasksListPresenter {
 
     // MARK: - Services
 
-    private let defaultsManager: UserDefaultsService
-    private let taskCDManager: TaskCoreDataService
+    private let defaultsService: UserDefaultsService
     private let initialDataLoader: InitialDataLoader
 
-    // MARK: - View
+    // MARK: - MVP components
 
     private weak var view: TasksListViewType?
-
-    // MARK: - Model
-
     private var model: TaskListModel
-    private var selectedTaskIndexPath: IndexPath?
 
     // MARK: - Init
 
     init(
         model: TaskListModel,
         defaultsManager: UserDefaultsService = .shared,
-        taskCDManager: TaskCoreDataService = .init(),
         initialDataLoader: InitialDataLoader = .init()
     ) {
         self.model = model
-        self.defaultsManager = defaultsManager
-        self.taskCDManager = taskCDManager
+        self.defaultsService = defaultsManager
         self.initialDataLoader = initialDataLoader
     }
 
@@ -44,13 +37,13 @@ final class TasksListPresenter {
 extension TasksListPresenter: TasksListPresenterType {
 
     func viewDidLoad() {
-        if !defaultsManager.getIsTasksFirstLoad() {
+        if !defaultsService.getIsTasksFirstLoad() {
             // TODO: установить лоадер
             initialDataLoader.loadData() { [weak self] in
-                self?.defaultsManager.setIsTasksFirstLoad(true)
+                self?.defaultsService.setIsTasksFirstLoad(true)
                 // скрыть лоадер
             } errorCompletionHandler: {
-                
+
             }
         } else {
 
@@ -71,7 +64,7 @@ extension TasksListPresenter: TasksListPresenterType {
     }
 
     func didTapIsDoneButtonInCellWith(indexPath: IndexPath) {
-        model.switchAndUpdateTaskIsCompletedFieldWith(indexPath: indexPath)
+        model.updateAndSwitchIsCompletedFieldWith(indexPath: indexPath)
     }
 
     func didTapDeleteButtonInCellWith(indexPath: IndexPath) {
@@ -90,7 +83,7 @@ extension TasksListPresenter: TasksListPresenterType {
     func didSelectTaskWith(indexPath: IndexPath) {
         guard let taskId = model.getTaskIdFor(indexPath: indexPath) else { return }
         
-        selectedTaskIndexPath = indexPath
+        model.setSelectedTaskIndexPath(indexPath)
         view?.openTaskDetailWith(taskId: taskId)
     }
 }
@@ -101,31 +94,39 @@ extension TasksListPresenter: TaskListModelDelegate {
         view?.tableBeginUpdates()
     }
 
-    func taskListModelDidCreate(indexPath: IndexPath) {
+    func taskListModelEndUpdates() {
+        view?.tableEndUpdates()
+    }
+
+    func taskListModelTaskDidCreate(indexPath: IndexPath) {
         view?.addTableCellTo(indexPath: indexPath)
     }
 
-    func taskListModelDidUpdate(in indexPath: IndexPath, taskModel: TaskModel) {
+    func taskListModelTaskDidUpdate(in indexPath: IndexPath, taskModel: TaskModel) {
         let taskCellDto = buildTaskCellDtoFrom(taskModel: taskModel)
         view?.refillTableCellWith(taskCellDto: taskCellDto, indexPath: indexPath)
     }
 
-    func taskListModelDidMove(fromIndexPath: IndexPath, toIndexPath: IndexPath, taskModel: TaskModel) {
+    func taskListModelTaskDidMove(fromIndexPath: IndexPath, toIndexPath: IndexPath, taskModel: TaskModel) {
         let taskCellDto = self.buildTaskCellDtoFrom(taskModel: taskModel)
         view?.refillTableCellWith(taskCellDto: taskCellDto, indexPath: fromIndexPath)
         view?.moveTableCell(fromIndexPath: fromIndexPath, toIndexPath: toIndexPath, withAnimate: true)
 
-        if selectedTaskIndexPath != nil && selectedTaskIndexPath == fromIndexPath {
-            selectedTaskIndexPath = toIndexPath
+        if model.selectedTaskIndexPath != nil && model.selectedTaskIndexPath == fromIndexPath {
+            model.setSelectedTaskIndexPath(toIndexPath)
         }
     }
 
-    func taskListModelDidDelete(indexPath: IndexPath) {
+    func taskListModelTaskDidDelete(indexPath: IndexPath) {
         view?.removeTableCellWith(indexPath: indexPath)
     }
 
-    func taskListModelEndUpdates() {
-        view?.tableEndUpdates()
+    func taskListModelSectionDidInsert(sectionIndex: Int) {
+        view?.addTableSectionWith(index: sectionIndex)
+    }
+
+    func taskListModelSectionDidDelete(sectionIndex: Int) {
+        view?.deleteTableSectionWith(index: sectionIndex)
     }
 }
 
@@ -133,9 +134,8 @@ extension TasksListPresenter: TaskListModelDelegate {
 
 extension TasksListPresenter: TaskDetailModuleOutput {
     func taskDetailModuleDidClose(taskId: UUID) {
-        self.selectedTaskIndexPath = nil
+        model.setSelectedTaskIndexPath(nil)
     }
-
 }
 
 // MARK: - Helpers methods

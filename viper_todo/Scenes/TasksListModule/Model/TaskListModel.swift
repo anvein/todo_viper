@@ -6,10 +6,14 @@ final class TaskListModel: NSObject {
     
     // MARK: - Services
 
-    private let taskCDManager: TaskCoreDataService
+    private let taskCDService: TaskCoreDataService
     private let coreDataStack: CoreDataStack
 
     weak var delegate: TaskListModelDelegate?
+
+    // MARK: - State
+
+    private(set) var selectedTaskIndexPath: IndexPath?
 
     // MARK: -
 
@@ -21,7 +25,7 @@ final class TaskListModel: NSObject {
         taskCDManager: TaskCoreDataService,
         coreDataStack: CoreDataStack = .shared
     ) {
-        self.taskCDManager = taskCDManager
+        self.taskCDService = taskCDManager
         self.coreDataStack = coreDataStack
 
         let fetchRequest: NSFetchRequest<CDTask> = CDTask.fetchRequest()
@@ -69,19 +73,25 @@ final class TaskListModel: NSObject {
 
     // MARK: - Modify Task
 
-    func switchAndUpdateTaskIsCompletedFieldWith(indexPath: IndexPath) {
+    func updateAndSwitchIsCompletedFieldWith(indexPath: IndexPath) {
         let cdTask = getCDTask(at: indexPath)
         let newValue = !cdTask.isCompleted
-        taskCDManager.updateField(isCompleted: newValue, task: cdTask)
+        taskCDService.updateField(isCompleted: newValue, task: cdTask)
     }
 
     func deleteTaskWith(indexPath: IndexPath) {
         let cdTask = getCDTask(at: indexPath)
-        taskCDManager.delete(tasks: cdTask)
+        taskCDService.delete(tasks: cdTask)
     }
 
     func createTaskWith(title: String) {
-        taskCDManager.createWith(title: title)
+        taskCDService.createWith(title: title)
+    }
+
+    // MARK: - Update state
+
+    func setSelectedTaskIndexPath(_ indexPath: IndexPath?) {
+        selectedTaskIndexPath = indexPath
     }
 
 }
@@ -110,23 +120,23 @@ extension TaskListModel: NSFetchedResultsControllerDelegate {
         switch type {
         case .insert:
             if let newIndexPath {
-                delegate?.taskListModelDidCreate(indexPath: newIndexPath)
+                delegate?.taskListModelTaskDidCreate(indexPath: newIndexPath)
             }
         case .delete:
             if let indexPath {
-                delegate?.taskListModelDidDelete(indexPath: indexPath)
+                delegate?.taskListModelTaskDidDelete(indexPath: indexPath)
             }
         case .update:
             if let indexPath {
                 let cdTask = getCDTask(at: indexPath)
                 let taskModel = TaskModel(cdTask: cdTask)
-                delegate?.taskListModelDidUpdate(in: indexPath, taskModel: taskModel)
+                delegate?.taskListModelTaskDidUpdate(in: indexPath, taskModel: taskModel)
             }
         case .move:
             if let indexPath, let newIndexPath,
                let cdTask = anObject as? CDTask {
                 let taskModel = TaskModel(cdTask: cdTask)
-                delegate?.taskListModelDidMove(
+                delegate?.taskListModelTaskDidMove(
                     fromIndexPath: indexPath,
                     toIndexPath: newIndexPath,
                     taskModel: taskModel
@@ -134,6 +144,17 @@ extension TaskListModel: NSFetchedResultsControllerDelegate {
             }
 
         @unknown default:
+            break
+        }
+    }
+
+    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange sectionInfo: NSFetchedResultsSectionInfo, atSectionIndex sectionIndex: Int, for type: NSFetchedResultsChangeType) {
+        switch type {
+        case .insert:
+            delegate?.taskListModelSectionDidInsert(sectionIndex: sectionIndex)
+        case .delete:
+            delegate?.taskListModelSectionDidDelete(sectionIndex: sectionIndex)
+        default:
             break
         }
     }

@@ -17,7 +17,7 @@ final class TaskCreatePanel: UIView {
 
     // MARK: - State
 
-    private(set) var currentState: State = .base {
+    var currentState: State = .base {
         didSet {
             if oldValue != currentState {
                 updateAppearaceFor(state: currentState)
@@ -71,7 +71,7 @@ private extension TaskCreatePanel {
 
     // MARK: - Setup
 
-    private func setupLayout() {
+    func setupLayout() {
         addSubviews(blurBgEffectView, textField, readyButton)
 
         blurBgEffectView.snp.makeConstraints {
@@ -90,7 +90,7 @@ private extension TaskCreatePanel {
         }
     }
 
-    private func updateAppearaceFor(state: State) {
+    func updateAppearaceFor(state: State) {
         blurBgEffectView.isHidden = state.textFieldBlurBgIsHidden
         layer.backgroundColor = CGColor(red: 1, green: 1, blue: 1, alpha: state.panelBgAlpha)
 
@@ -115,6 +115,8 @@ private extension TaskCreatePanel {
 
         textField.updateAppearanceFor(state: state)
     }
+
+    // MARK: - Actions handlers
 
     @objc func changeAppearance() {
         var cstate: State

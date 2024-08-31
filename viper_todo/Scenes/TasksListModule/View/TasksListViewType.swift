@@ -14,7 +14,9 @@ protocol TasksListViewType: AnyObject  {
     func moveTableCell(fromIndexPath: IndexPath, toIndexPath: IndexPath, withAnimate: Bool)
     func addTableCellTo(indexPath: IndexPath)
 
-    func openTaskDetailWith(taskId: UUID)
+    func addTableSectionWith(index: Int)
+    func deleteTableSectionWith(index: Int)
 
+    func openTaskDetailWith(taskId: UUID)
     func showAlertDeleteTaskWith(indexPath: IndexPath, title: String)
 }

@@ -3,7 +3,7 @@ import SnapKit
 
 final class TaskDetailViewController: UIViewController {
 
-    // MARK: - Presenter
+    // MARK: - MVP components
 
     private let presenter: TaskDetailPresenterProtocol
 
@@ -52,12 +52,12 @@ final class TaskDetailViewController: UIViewController {
     private lazy var taskDescriptionTextView: TaskDetailDescriptionTextView = {
         $0.placeholder = "Описание задачи"
         $0.isScrollEnabled = true
-        $0.showsHorizontalScrollIndicator = true
+        $0.showsVerticalScrollIndicator = true
         $0.returnKeyType = .done
         $0.backgroundColor = .white
         $0.textColor = .textBlack
         $0.font = .systemFont(ofSize: 18, weight: .regular)
-        $0.setContentHuggingPriority(.defaultLow, for: .vertical)
+        $0.setContentHuggingPriority(.required, for: .vertical)
         $0.externalDelegate = self
         return $0
     }(TaskDetailDescriptionTextView())
@@ -98,6 +98,7 @@ final class TaskDetailViewController: UIViewController {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
+        view.endEditing(true)
         if isMovingFromParent || isBeingDismissed {
             presenter.didCloseTaskDetail()
         }
@@ -147,7 +148,7 @@ private extension TaskDetailViewController {
 
     func setupNavigationBar() {
         if let navigationBar = navigationController?.navigationBar {
-            navigationBar.tintColor = .textBlack
+            navigationBar.tintColor = .taskDetailNavigation
         }
     }
 
