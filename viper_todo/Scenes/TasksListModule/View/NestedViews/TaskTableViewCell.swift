@@ -74,7 +74,7 @@ final class TaskTableViewCell: UITableViewCell {
 
     // MARK: - Update view
 
-    func fillFrom(cellDto: TaskCellDto) {
+    func fillFrom(cellDto: TaskListCellDto) {
         isDoneButton.isOn = cellDto.isCompleted
         titleLabel.text = cellDto.title
     }

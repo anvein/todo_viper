@@ -1,7 +1,7 @@
 
 import Foundation
 
-struct TaskCellDto {
+struct TaskListCellDto {
     var title: String
     var isCompleted: Bool
 }

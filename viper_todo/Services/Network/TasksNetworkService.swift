@@ -1,9 +1,9 @@
 
 import Foundation
 
-final class TasksNetworkManager: BaseNetworkManager {
+final class TasksNetworkService: BaseNetworkService {
 
-    static var shared: TasksNetworkManager = .init()
+    static var shared: TasksNetworkService = .init()
 
     // MARK: - Tasks
 

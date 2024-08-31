@@ -2,7 +2,15 @@
 import Foundation
 import CoreData
 
-final class TaskCoreDataManager: BaseCoreDataManager {
+final class TaskCoreDataService {
+
+    private let coreDataStack: CoreDataStack
+
+    // MARK: - Init
+    
+    init(coreDataStack: CoreDataStack = .shared) {
+        self.coreDataStack = coreDataStack
+    }
 
     // MARK: - Select
 
@@ -13,11 +21,14 @@ final class TaskCoreDataManager: BaseCoreDataManager {
         ]
 
         if let isCompleted {
-            fetchRequest.predicate = NSPredicate(format: "isCompleted == %@", NSNumber(value: isCompleted))
+            fetchRequest.predicate = NSPredicate(
+                format: "isCompleted == %@",
+                NSNumber(value: isCompleted)
+            )
         }
 
         do {
-            let tasks = try getContext().fetch(fetchRequest)
+            let tasks = try coreDataStack.context.fetch(fetchRequest)
 
             return tasks
         } catch let error as NSError {
@@ -31,7 +42,7 @@ final class TaskCoreDataManager: BaseCoreDataManager {
         fetchRequest.predicate = NSPredicate(format: "id == %@", id as CVarArg)
 
         do {
-            let results = try getContext().fetch(fetchRequest)
+            let results = try coreDataStack.context.fetch(fetchRequest)
             return results.first
         } catch {
             // логировать
@@ -43,14 +54,14 @@ final class TaskCoreDataManager: BaseCoreDataManager {
 
     @discardableResult
     func createWith(title: String, isCompleted: Bool = false, description: String? = nil) -> CDTask {
-        let task = CDTask(context: getContext())
+        let task = CDTask(context: coreDataStack.context)
         task.id = UUID()
         task.createdAt = Date()
         task.title = title
         task.isCompleted = isCompleted
         task.descriptionText = description
 
-        saveContext()
+        coreDataStack.saveContext()
 
         return task
     }
@@ -59,27 +70,26 @@ final class TaskCoreDataManager: BaseCoreDataManager {
 
     func updateField(isCompleted: Bool, task: CDTask) {
         task.isCompleted = isCompleted
-        saveContext()
+        coreDataStack.saveContext()
     }
 
     func updateField(title: String, task: CDTask) {
         task.title = title
-        saveContext()
+        coreDataStack.saveContext()
     }
 
     func updateField(descriptionText: String?, task: CDTask) {
         task.descriptionText = descriptionText
-        saveContext()
+        coreDataStack.saveContext()
     }
 
     // MARK: - Delete
 
-    func delete(tasks: [CDTask]) {
-        let context = getContext()
+    func delete(tasks: CDTask...) {
         for task in tasks {
-            context.delete(task)
+            coreDataStack.context.delete(task)
         }
 
-        saveContext()
+        coreDataStack.saveContext()
     }
 }

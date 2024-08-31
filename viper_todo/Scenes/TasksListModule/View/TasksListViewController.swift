@@ -96,6 +96,19 @@ extension TasksListViewController {
 
 extension TasksListViewController: TasksListViewType {
 
+    func tableBeginUpdates() {
+        mainView.tasksTableView.beginUpdates()
+    }
+    
+    func tableEndUpdates() {
+        mainView.tasksTableView.endUpdates()
+    }
+    
+    func refillTableCellWith(taskCellDto: TaskListCellDto, indexPath: IndexPath) {
+        let cell = mainView.tasksTableView.cellForRow(at: indexPath) as? TaskTableViewCell
+        cell?.fillFrom(cellDto: taskCellDto)
+    }
+
     func reloadTableData() {
         mainView.tasksTableView.reloadData()
     }

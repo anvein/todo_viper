@@ -3,13 +3,18 @@ import Foundation
 
 final class TaskListModuleAssemler {
     func assembly() -> TasksListViewController {
-        let tasksListPresenter = TasksListPresenter()
+        let taskCDManager = TaskCoreDataService()
+        let model = TaskListModel(taskCDManager: taskCDManager)
+
+        let presenter = TasksListPresenter(model: model)
+        model.delegate = presenter
+
         let assembler = TaskDetailModuleAssembler()
         let taskListVC = TasksListViewController(
-            presenter: tasksListPresenter,
+            presenter: presenter,
             taskDetailAssembler: assembler
         )
-        tasksListPresenter.setView(taskListVC)
+        presenter.setView(taskListVC)
 
         return taskListVC
     }

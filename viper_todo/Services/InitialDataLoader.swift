@@ -3,14 +3,14 @@ import Foundation
 
 final class InitialDataLoader {
 
-    private let taskNetworkManager: TasksNetworkManager
-    private let taskCDManager: TaskCoreDataManager
+    private let taskNetworkManager: TasksNetworkService
+    private let taskCDManager: TaskCoreDataService
 
     // MARK: - Init
     
     init(
-        networkManager: TasksNetworkManager = .shared,
-        taskCDManager: TaskCoreDataManager = .init()
+        networkManager: TasksNetworkService = .shared,
+        taskCDManager: TaskCoreDataService = .init()
     ) {
         self.taskNetworkManager = networkManager
         self.taskCDManager = taskCDManager
@@ -23,7 +23,7 @@ final class InitialDataLoader {
         errorCompletionHandler: @escaping () -> Void
     ) {
         var page: Int = 1
-        let itemsPerPage = 30
+        let itemsPerPage = 300
         var loadingFlag = true
 
         loadTasksFromPage(page, itemsPerPage: itemsPerPage) { [weak self] response in

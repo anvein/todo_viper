@@ -5,7 +5,7 @@ final class TaskDetailPresenter {
 
     // MARK: - Services
 
-    private let taskCDManager: TaskCoreDataManager
+    private let taskCDManager: TaskCoreDataService
 
     // MARK: - View / Presenter
 
@@ -21,7 +21,7 @@ final class TaskDetailPresenter {
 
     init(
         taskId: UUID,
-        taskCDManager: TaskCoreDataManager = .init()
+        taskCDManager: TaskCoreDataService = .init()
     ) {
         self.taskCDManager = taskCDManager
         self.taskId = taskId

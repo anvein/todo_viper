@@ -1,7 +1,7 @@
 
 import Foundation
 
-class BaseNetworkManager {
+class BaseNetworkService {
 
     private let urlSession: URLSession
 

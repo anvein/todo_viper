@@ -5,8 +5,8 @@ final class TasksListPresenter {
 
     // MARK: - Services
 
-    private let defaultsManager: UserDefaultsManager
-    private let taskCDManager: TaskCoreDataManager
+    private let defaultsManager: UserDefaultsService
+    private let taskCDManager: TaskCoreDataService
     private let initialDataLoader: InitialDataLoader
 
     // MARK: - View
@@ -15,16 +15,18 @@ final class TasksListPresenter {
 
     // MARK: - Model
 
-    private var tasks: [TaskSectionKey.RawValue: [TaskModel]] = [:]
+    private var model: TaskListModel
     private var selectedTaskIndexPath: IndexPath?
 
     // MARK: - Init
 
     init(
-        defaultsManager: UserDefaultsManager = .shared,
-        taskCDManager: TaskCoreDataManager = .init(),
+        model: TaskListModel,
+        defaultsManager: UserDefaultsService = .shared,
+        taskCDManager: TaskCoreDataService = .init(),
         initialDataLoader: InitialDataLoader = .init()
     ) {
+        self.model = model
         self.defaultsManager = defaultsManager
         self.taskCDManager = taskCDManager
         self.initialDataLoader = initialDataLoader
@@ -44,109 +46,93 @@ extension TasksListPresenter: TasksListPresenterType {
     func viewDidLoad() {
         if !defaultsManager.getIsTasksFirstLoad() {
             // TODO: установить лоадер
-
             initialDataLoader.loadData() { [weak self] in
                 self?.defaultsManager.setIsTasksFirstLoad(true)
-                self?.loadTasksFromDB()
-                self?.view?.reloadTableData()
                 // скрыть лоадер
             } errorCompletionHandler: {
                 
             }
         } else {
-            loadTasksFromDB()
+
         }
     }
 
     func getSectionsCount() -> Int {
-        return tasks.count
+        return model.getSectionsCount()
     }
 
     func getTasksCountIn(sectionIndex: Int) -> Int {
-        guard let sectionKey = getTaskSectionKeyFor(sectionIndex: sectionIndex) else { return 0 }
-        return tasks[sectionKey.rawValue]?.count ?? 0
+        return model.getTasksCountIn(in: sectionIndex)
     }
 
-    func getTaskCellFor(indexPath: IndexPath) -> TaskCellDto? {
-        guard let task = getTaskModelFor(indexPath: indexPath) else { return nil }
-        return buildTaskCellDtoFrom(taskModel: task)
+    func getTaskCellFor(indexPath: IndexPath) -> TaskListCellDto? {
+        let taskModel = model.getTask(for: indexPath)
+        return buildTaskCellDtoFrom(taskModel: taskModel)
     }
 
     func didTapIsDoneButtonInCellWith(indexPath: IndexPath) {
-        guard let taskModel = getTaskModelFor(indexPath: indexPath),
-              let taskId = taskModel.id,
-              let taskCDModel = taskCDManager.getTaskBy(id: taskId) else { return }
-
-        let newValue = !taskModel.isCompleted
-        taskCDManager.updateField(isCompleted: newValue, task: taskCDModel)
-
-        updateTasksArrayForUpdateIsCompleted(
-            taskModel: taskModel,
-            currentIndexPath: indexPath,
-            isCompletedNew: newValue,
-            performDeadline: 0.15,
-            withAnimate: true
-        )
+        model.switchAndUpdateTaskIsCompletedFieldWith(indexPath: indexPath)
     }
 
     func didTapDeleteButtonInCellWith(indexPath: IndexPath) {
-        guard let taskModel = getTaskModelFor(indexPath: indexPath) else { return }
+        let taskModel = model.getTask(for: indexPath)
         view?.showAlertDeleteTaskWith(indexPath: indexPath, title: taskModel.title)
     }
 
     func didTapConfirmDeleteTaskWith(indexPath: IndexPath) {
-        guard let taskModel = getTaskModelFor(indexPath: indexPath),
-              let taskId = taskModel.id,
-              let cdTask = taskCDManager.getTaskBy(id: taskId) else { return }
-
-        taskCDManager.delete(tasks: [cdTask])
-        removeTaskWith(indexPath: indexPath)
-        view?.removeTableCellWith(indexPath: indexPath)
+        model.deleteTaskWith(indexPath: indexPath)
     }
 
     func createTaskWith(title: String) {
-        let cdTask = taskCDManager.createWith(title: title)
-        let taskModel = TaskModel(cdTask: cdTask)
-
-        let newIndex = 0
-        tasks[TaskSectionKey.todo.rawValue]?.insert(taskModel, at: newIndex)
-        view?.addTableCellTo(indexPath: IndexPath(item: newIndex, section: 0))
+        model.createTaskWith(title: title)
     }
 
     func didSelectTaskWith(indexPath: IndexPath) {
-        guard let taskModel = getTaskModelFor(indexPath: indexPath),
-              let taskId = taskModel.id else { return }
-
+        guard let taskId = model.getTaskIdFor(indexPath: indexPath) else { return }
+        
         selectedTaskIndexPath = indexPath
-
         view?.openTaskDetailWith(taskId: taskId)
     }
 }
 
-// MARK: - TasksListPresenter
+extension TasksListPresenter: TaskListModelDelegate {
+
+    func taskListModelBeginUpdates() {
+        view?.tableBeginUpdates()
+    }
+
+    func taskListModelDidCreate(indexPath: IndexPath) {
+        view?.addTableCellTo(indexPath: indexPath)
+    }
+
+    func taskListModelDidUpdate(in indexPath: IndexPath, taskModel: TaskModel) {
+        let taskCellDto = buildTaskCellDtoFrom(taskModel: taskModel)
+        view?.refillTableCellWith(taskCellDto: taskCellDto, indexPath: indexPath)
+    }
+
+    func taskListModelDidMove(fromIndexPath: IndexPath, toIndexPath: IndexPath, taskModel: TaskModel) {
+        let taskCellDto = self.buildTaskCellDtoFrom(taskModel: taskModel)
+        view?.refillTableCellWith(taskCellDto: taskCellDto, indexPath: fromIndexPath)
+        view?.moveTableCell(fromIndexPath: fromIndexPath, toIndexPath: toIndexPath, withAnimate: true)
+
+        if selectedTaskIndexPath != nil && selectedTaskIndexPath == fromIndexPath {
+            selectedTaskIndexPath = toIndexPath
+        }
+    }
+
+    func taskListModelDidDelete(indexPath: IndexPath) {
+        view?.removeTableCellWith(indexPath: indexPath)
+    }
+
+    func taskListModelEndUpdates() {
+        view?.tableEndUpdates()
+    }
+}
+
+// MARK: - TaskDetailModuleOutput
 
 extension TasksListPresenter: TaskDetailModuleOutput {
     func taskDetailModuleDidClose(taskId: UUID) {
-        guard let selectedTaskIndexPath,
-              let selectedTaskModel = getTaskModelFor(indexPath: selectedTaskIndexPath),
-              selectedTaskModel.id == taskId,
-              let actualCdTaskModel = taskCDManager.getTaskBy(id: taskId) else { return }
-
-        selectedTaskModel.title = actualCdTaskModel.title ?? "No title"
-        selectedTaskModel.description = actualCdTaskModel.descriptionText
-
-        view?.reloadTableCellWith(indexPath: selectedTaskIndexPath)
-
-        if selectedTaskModel.isCompleted != actualCdTaskModel.isCompleted {
-            updateTasksArrayForUpdateIsCompleted(
-                taskModel: selectedTaskModel,
-                currentIndexPath: selectedTaskIndexPath,
-                isCompletedNew: actualCdTaskModel.isCompleted,
-                performDeadline: 0,
-                withAnimate: false
-            )
-        }
-
         self.selectedTaskIndexPath = nil
     }
 
@@ -155,97 +141,10 @@ extension TasksListPresenter: TaskDetailModuleOutput {
 // MARK: - Helpers methods
 
 private extension TasksListPresenter {
-    func getTaskSectionIndexFor(indexPath: IndexPath) -> TaskSectionKey? {
-        return getTaskSectionKeyFor(sectionIndex: indexPath.section)
-    }
-
-    func getTaskSectionKeyFor(sectionIndex: Int) -> TaskSectionKey? {
-        return TaskSectionKey(sectionIndex: sectionIndex)
-    }
-
-    func getTaskModelFor(indexPath: IndexPath) -> TaskModel? {
-        guard let taskSection = getTaskSectionIndexFor(indexPath: indexPath) else { return nil }
-        return tasks[taskSection.rawValue]?[safe: indexPath.row]
-    }
-
-    func removeTaskWith(indexPath: IndexPath) {
-        guard let taskSection = getTaskSectionIndexFor(indexPath: indexPath) else { return }
-        tasks[taskSection.rawValue]?.remove(at: indexPath.row)
-    }
-
-    func buildTaskCellDtoFrom(taskModel: TaskModel) -> TaskCellDto {
-        return TaskCellDto(
+    func buildTaskCellDtoFrom(taskModel: TaskModel) -> TaskListCellDto {
+        return TaskListCellDto(
             title: taskModel.title,
             isCompleted: taskModel.isCompleted
         )
-    }
-
-    func loadTasksFromDB() {
-        tasks = [
-            TaskSectionKey.todo.rawValue : [],
-            TaskSectionKey.completed.rawValue: [],
-        ]
-        let cdTodoTasks = taskCDManager.getTasksWithSorting(isCompleted: false)
-        for cdTask in cdTodoTasks {
-            let taskModel = TaskModel(cdTask: cdTask)
-            tasks[TaskSectionKey.todo.rawValue]?.append(taskModel)
-        }
-
-        let cdCompletedTasks = taskCDManager.getTasksWithSorting(isCompleted: true)
-        for cdTask in cdCompletedTasks {
-            let taskModel = TaskModel(cdTask: cdTask)
-            tasks[TaskSectionKey.completed.rawValue]?.append(taskModel)
-        }
-    }
-
-    func updateTasksArrayForUpdateIsCompleted(
-        taskModel: TaskModel,
-        currentIndexPath: IndexPath,
-        isCompletedNew: Bool,
-        performDeadline: TimeInterval,
-        withAnimate: Bool
-    ) {
-        guard let oldSectionKey = getTaskSectionIndexFor(indexPath: currentIndexPath) else { return }
-
-        let newSectionKey: TaskSectionKey = isCompletedNew ? .completed : .todo
-        let newTaskIndex = 0
-
-        taskModel.isCompleted = isCompletedNew
-        view?.reloadTableCellWith(indexPath: currentIndexPath)
-
-        tasks[oldSectionKey.rawValue]?.remove(at: currentIndexPath.row)
-        tasks[newSectionKey.rawValue]?.insert(taskModel, at: newTaskIndex)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + performDeadline, execute: .init(block: { [view] in
-            view?.moveTableCell(
-                fromIndexPath: currentIndexPath,
-                toIndexPath: IndexPath(row: newTaskIndex, section: newSectionKey.tableSectionIndex),
-                withAnimate: withAnimate
-            )
-        }))
-    }
-}
-
-// MARK: - TasksListPresenter.TaskSection
-
-private extension TasksListPresenter {
-    enum TaskSectionKey: String {
-        case todo
-        case completed
-
-        init?(sectionIndex: Int) {
-            switch sectionIndex {
-            case 0: self.init(rawValue: Self.todo.rawValue)
-            case 1: self.init(rawValue: Self.completed.rawValue)
-            default: return nil
-            }
-        }
-
-        var tableSectionIndex: Int {
-            switch self {
-            case .todo: return 0
-            case .completed: return 1
-            }
-        }
     }
 }

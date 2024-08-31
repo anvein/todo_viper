@@ -7,7 +7,7 @@ protocol TasksListPresenterType {
     func getSectionsCount() -> Int
     func getTasksCountIn(sectionIndex: Int) -> Int
 
-    func getTaskCellFor(indexPath: IndexPath) -> TaskCellDto?
+    func getTaskCellFor(indexPath: IndexPath) -> TaskListCellDto?
 
     func didTapIsDoneButtonInCellWith(indexPath: IndexPath)
 

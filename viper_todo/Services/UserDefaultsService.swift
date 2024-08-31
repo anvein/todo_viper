@@ -1,9 +1,9 @@
 
 import Foundation
 
-class UserDefaultsManager {
+class UserDefaultsService {
 
-    static let shared: UserDefaultsManager = .init()
+    static let shared: UserDefaultsService = .init()
 
     // MARK: - Services
 
